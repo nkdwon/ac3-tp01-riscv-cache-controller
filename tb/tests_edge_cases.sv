@@ -1,0 +1,1 @@
+// Testes de casos limite: cache vazia, cache inválida e acessos a endereços extremos.

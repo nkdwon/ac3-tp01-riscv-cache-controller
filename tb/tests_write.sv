@@ -1,0 +1,1 @@
+// Testes de escrita: write hit, write miss e validação da política de escrita e do dirty bit.

@@ -1,0 +1,1 @@
+// Testes de consistência: coerência dos dados, acessos repetidos e conflitos de índice.

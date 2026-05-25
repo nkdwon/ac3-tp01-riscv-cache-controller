@@ -1,0 +1,1 @@
+// Testes de substituição: substituição de blocos, conflitos de cache e escrita de blocos dirty na memória.

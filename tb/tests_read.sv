@@ -1,0 +1,1 @@
+// Testes de leitura: read hit, read miss e atualização correta dos bits valid e tag.

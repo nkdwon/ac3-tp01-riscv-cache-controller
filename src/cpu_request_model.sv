@@ -1,0 +1,1 @@
+// Modelo de CPU usado na simulação para gerar requisições de leitura e escrita para a cache.

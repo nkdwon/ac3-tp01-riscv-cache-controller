@@ -1,0 +1,1 @@
+// Modelo de memória principal usado na simulação para responder às requisições da cache.

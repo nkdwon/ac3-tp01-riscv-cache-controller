@@ -1,0 +1,19 @@
+# Simulação
+bin/
+work/
+*.vcd
+*.wlf
+*.fst
+*.vvp
+
+# Executáveis
+simv
+simv.exe
+
+# Logs
+transcript
+logs/
+
+# Sistema
+.DS_Store
+Thumbs.db
