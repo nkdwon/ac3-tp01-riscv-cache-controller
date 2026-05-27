@@ -49,8 +49,12 @@ module dm_cache_fsm(
 
     /* no state change by default */
     vstate = rstate;
-    v_cpu_res = '{0, 0};
-    tag_write = '{0, 0, 0};
+    v_cpu_res.data = '0;
+    v_cpu_res.ready = '0;
+
+    tag_write.valid = '0;
+    tag_write.dirty = '0;
+    tag_write.tag = '0;
 
     /* read tag by default */
     tag_req.we = '0;
