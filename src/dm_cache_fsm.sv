@@ -14,11 +14,11 @@ module dm_cache_fsm(
   timeprecision 1ps;
 
   /* write clock */
-  typedef enum {
-    idle,
-    compare_tag,
-    allocate,
-    write_back
+  typedef enum logic [1:0] {
+    idle       = 2'd0,
+    compare_tag= 2'd1,
+    allocate   = 2'd2,
+    write_back = 2'd3
   } cache_state_type;
 
   /* FSM state register */
@@ -44,7 +44,7 @@ module dm_cache_fsm(
   assign mem_req = v_mem_req;  // connect to output ports
   assign cpu_res = v_cpu_res;
 
-  always_comb begin
+  always @(*) begin
     /*-------------------------default values for all signals------------*/
 
     /* no state change by default */
@@ -71,20 +71,32 @@ module dm_cache_fsm(
     /* modify correct word (32-bit) based on address */
     data_write = data_read;
 
-    case (cpu_req.addr[3:2])
-      2'b00: data_write[31:0]    = cpu_req.data;
-      2'b01: data_write[63:32]   = cpu_req.data;
-      2'b10: data_write[95:64]   = cpu_req.data;
-      2'b11: data_write[127:96]  = cpu_req.data;
-    endcase
+    if (cpu_req.addr[3:2] == 2'b00) begin
+      data_write[31:0]    = cpu_req.data;
+    end
+    else if (cpu_req.addr[3:2] == 2'b01) begin
+      data_write[63:32]   = cpu_req.data;
+    end
+    else if (cpu_req.addr[3:2] == 2'b10) begin
+      data_write[95:64]   = cpu_req.data;
+    end
+    else begin
+      data_write[127:96]  = cpu_req.data;
+    end
 
     /* read out correct word (32-bit) from cache (to CPU) */
-    case (cpu_req.addr[3:2])
-      2'b00: v_cpu_res.data = data_read[31:0];
-      2'b01: v_cpu_res.data = data_read[63:32];
-      2'b10: v_cpu_res.data = data_read[95:64];
-      2'b11: v_cpu_res.data = data_read[127:96];
-    endcase
+    if (cpu_req.addr[3:2] == 2'b00) begin
+      v_cpu_res.data = data_read[31:0];
+    end
+    else if (cpu_req.addr[3:2] == 2'b01) begin
+      v_cpu_res.data = data_read[63:32];
+    end
+    else if (cpu_req.addr[3:2] == 2'b10) begin
+      v_cpu_res.data = data_read[95:64];
+    end
+    else begin
+      v_cpu_res.data = data_read[127:96];
+    end
 
     /* memory request address (sampled from CPU request) */
     v_mem_req.addr = cpu_req.addr;
