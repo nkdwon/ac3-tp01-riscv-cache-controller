@@ -1,6 +1,6 @@
-# 📘 Trabalho Prático — Controlador de Cache RISC-V
+# 📘 Trabalho Prático 1 — Controlador de Cache RISC-V
 
-# Integrantes
+## Integrantes
 
 - Felipe Barros Ratton de Almeida
 - Laura Menezes Heráclito Alves
@@ -13,68 +13,78 @@
 
 Este projeto tem como objetivo implementar e validar um controlador de cache em SystemVerilog, baseado na especificação apresentada no livro:
 
-Computer Organization and Design: The Hardware/Software Interface — RISC-V Edition.
+**Computer Organization and Design: The Hardware/Software Interface — RISC-V Edition**
 
-O foco do trabalho é compreender os principais conceitos relacionados à hierarquia de memória e ao funcionamento de caches.
+O trabalho foi desenvolvido para a disciplina de Arquitetura de Computadores III e tem como foco a compreensão prática dos principais conceitos relacionados à hierarquia de memória, incluindo:
+
+- Funcionamento de caches;
+- Políticas de leitura e escrita;
+- Tratamento de cache misses;
+- Controle de bits valid e dirty;
+- Política write-back;
+- Comunicação entre cache e memória principal.
 
 ---
 
 ## 📚 Referência Teórica
 
-A implementação deste projeto segue o modelo apresentado no Capítulo 5, Seção 5.12 do livro:
+A implementação segue a arquitetura apresentada no:
 
-*Computer Organization and Design: The Hardware/Software Interface — RISC-V Edition.*
+**Capítulo 5, Seção 5.12 — Computer Organization and Design: The Hardware/Software Interface (RISC-V Edition)**
 
-A estrutura principal da cache, nomenclatura dos módulos e organização da implementação foram baseadas diretamente nos exemplos fornecidos pelo livro para uma cache direct-mapped (mapeamento direto) implementada em SystemVerilog.
-
-Os módulos principais seguem a organização apresentada pelo material teórico:
-
-- `cache_def.sv`: definições de tipos, parâmetros e interfaces.
-- `dm_cache_data.sv`: memória de dados da cache.
-- `dm_cache_tag.sv`: memória de tags da cache.
-- `dm_cache_fsm.sv`: máquina de estados finitos (FSM) do controlador da cache.
-- `memory_model.sv`: modelo de memória principal utilizado na simulação.
-- `cpu_request_model.sv`: modelo de requisições da CPU utilizado nos testes.
+A organização dos módulos e a estrutura geral da cache foram inspiradas diretamente no modelo de cache direct-mapped apresentado pelo livro.
 
 ---
 
-## ⚙️ Observações de Implementação
+## 🏗️ Arquitetura Implementada
 
-Embora a arquitetura do controlador de cache siga a organização apresentada no livro, algumas adaptações de implementação foram realizadas para garantir compatibilidade com o simulador utilizado no projeto (Icarus Verilog).
+O projeto implementa uma cache de mapeamento direto (*Direct-Mapped Cache*) composta pelos seguintes módulos:
 
-As principais adaptações foram:
+| Módulo | Descrição |
+|----------|----------|
+| `cache_def.sv` | Definições de tipos, parâmetros e interfaces |
+| `dm_cache_data.sv` | Memória de dados da cache |
+| `dm_cache_tag.sv` | Memória de tags da cache |
+| `dm_cache_fsm.sv` | Controlador principal da cache (FSM) |
+| `memory_model.sv` | Modelo simplificado de memória principal |
+| `cpu_request_model.sv` | Gerador de requisições da CPU para testes |
 
-- Criação de modelos simplificados de CPU e memória principal para validação funcional da cache;
-- Implementação de um ambiente completo de simulação (`tb_dm_cache.sv`);
-- Ajustes na FSM do controlador para compatibilidade com o simulador;
-- Simplificação de algumas interfaces de comunicação entre módulos, substituindo estruturas compostas por sinais explícitos quando necessário.
+---
 
-Essas modificações não alteram a arquitetura conceitual da cache nem os requisitos funcionais definidos no enunciado ou no material de referência.
+## ⚙️ Adaptações de Implementação
+
+Embora a arquitetura siga a especificação apresentada pelo livro, algumas adaptações foram realizadas para facilitar a simulação utilizando o Icarus Verilog:
+
+- Implementação de modelos simplificados de CPU e memória principal;
+- Criação de um ambiente completo de validação funcional;
+- Ajustes na FSM para compatibilidade com o simulador;
+- Simplificação de algumas interfaces internas.
+
+Essas adaptações não alteram os requisitos funcionais do controlador de cache.
 
 ---
 
 ## 📦 Estrutura do Projeto
 
 ```text
-ac3-tp03-riscv-cache-controller/
+ac3-tp01-riscv-cache-controller/
 ├── bin/
 │
 ├── debug/
-│   ├── tb_smoke_memories.sv
-│   └── tb_smoke.sv
+│   ├── tb_smoke.sv
+│   └── tb_smoke_memories.sv
 │
 ├── docs/
 │   ├── enunciado/
-│   ├── Trabalho Prático 1.pdf
 │   └── relatorio/
 │
 ├── src/
 │   ├── cache_def.sv
+│   ├── cpu_request_model.sv
 │   ├── dm_cache_data.sv
-│   ├── dm_cache_tag.sv
 │   ├── dm_cache_fsm.sv
-│   ├── memory_model.sv
-│   └── cpu_request_model.sv
+│   ├── dm_cache_tag.sv
+│   └── memory_model.sv
 │
 ├── tb/
 │   ├── tb_dm_cache.sv
@@ -84,29 +94,75 @@ ac3-tp03-riscv-cache-controller/
 │   ├── tests_consistency.sv
 │   └── tests_edge_cases.sv
 │
-├── .gitignore
 ├── Makefile
-└── README.md
+├── README.md
+└── .gitignore
 ```
-
-### Pasta de Debug
-
-A pasta `debug/` contém testbenches simplificados utilizados durante o processo de depuração e validação incremental do controlador de cache.
-
-Esses arquivos foram utilizados para isolar problemas de compatibilidade com o simulador Icarus Verilog e não fazem parte dos testes finais do projeto.
-
-- `tb_smoke.sv`
-- `tb_smoke_memories.sv`
 
 ---
 
-# 🛠️ Ferramentas
+## 🧪 Testes Implementados
 
-## 🐧 Instalação no Ubuntu / Linux
+O projeto contempla todos os cenários mínimos exigidos pelo enunciado.
+
+### Leitura (Read Path)
+
+- Cache Hit
+- Cache Miss
+- Atualização correta de Valid Bit
+- Atualização correta de Tag
+
+### Escrita (Write Path)
+
+- Write Hit
+- Write Miss
+- Política Write-Back
+- Atualização do Dirty Bit
+
+### Substituição
+
+- Substituição de blocos
+- Escrita de blocos dirty na memória principal
+- Validação da política de substituição
+
+### Consistência
+
+- Sequências de leitura e escrita
+- Acessos repetidos ao mesmo endereço
+- Conflitos de mapeamento
+
+### Casos Limite
+
+- Cache inicialmente vazia
+- Cache totalmente inválida
+- Endereços extremos
+
+---
+
+## 📊 Funcionalidades
+
+- Cache Hit
+- Cache Miss
+- Leitura de memória
+- Escrita em cache
+- Write-Back
+- Dirty Bit
+- Valid Bit
+- Controle por FSM
+- Integração com memória principal
+- Simulação automatizada
+
+---
+
+## 🛠️ Dependências
+
+### Linux (Ubuntu/Debian)
+
+Instalar:
 
 ```bash
 sudo apt update
-sudo apt install build-essential iverilog gtkwave
+sudo apt install iverilog gtkwave make
 ```
 
 Verificar instalação:
@@ -114,154 +170,126 @@ Verificar instalação:
 ```bash
 iverilog -V
 gtkwave --version
+make --version
 ```
+
+Ferramentas utilizadas:
+
+- Icarus Verilog
+- GTKWave
+- GNU Make
 
 ---
 
-## ▶️ Compilar e Executar
+## ▶️ Compilação
 
-Para compilar e executar a simulação:
-
-```bash
-make run
-```
-
-Para compilar apenas:
+Para compilar o projeto:
 
 ```bash
 make build
 ```
 
-Para rodar os testes (alias de run):
+---
+
+## ▶️ Execução
+
+Para executar todos os testes:
+
+```bash
+make run
+```
+
+ou
 
 ```bash
 make test
 ```
 
-Para visualizar a waveform:
+---
+
+## 📈 Visualização de Waveforms
+
+Após a execução da simulação:
 
 ```bash
 make wave
 ```
 
-Para limpar os arquivos gerados:
+Será aberto o arquivo:
+
+```text
+bin/wave.vcd
+```
+
+para inspeção dos sinais através do GTKWave.
+
+---
+
+## 🧹 Limpeza
+
+Remover arquivos gerados:
 
 ```bash
 make clean
 ```
 
-Para ver um resumo dos comandos:
+---
+
+## ❓ Ajuda
+
+Listar os comandos disponíveis:
 
 ```bash
 make help
-```
-
-Os arquivos gerados pela simulação ficam na pasta:
-
-```text
-bin/
-├── simv
-└── wave.vcd
 ```
 
 ---
 
 ## 🪟 Windows
 
-### ✔️ Opção recomendada: WSL
+### Opção recomendada: WSL
 
 ```powershell
 wsl --install
 ```
 
-Depois:
+Após a instalação:
 
 ```bash
 sudo apt update
-sudo apt install build-essential iverilog gtkwave
+sudo apt install iverilog gtkwave make
 ```
 
----
-
-### ✔️ Opção nativa
+### Opção nativa
 
 - Icarus Verilog: http://bleyer.org/icarus/
 - GTKWave: https://gtkwave.sourceforge.net/
 
 ---
 
-## 📊 Funcionalidades
+## 🐞 Sinais Relevantes para Debug
 
-- Cache hit
-- Cache miss
-- Leitura de memória
-- Escrita em cache
-- Política write-back
-- Controle de bits valid e dirty
-- Integração com memória principal
-- Máquina de estados da cache
+Durante a análise das waveforms recomenda-se observar:
 
----
-
-## 🧠 Conceitos
-
-### Cache Hit
-Acesso a dado já presente na cache.
-
-### Cache Miss
-Dado não encontrado na cache, exigindo acesso à memória principal.
-
-### Write-back
-A memória principal é atualizada apenas quando necessário.
-
-### Dirty Bit
-Indica que um bloco foi modificado.
-
-### Valid Bit
-Indica que a linha da cache contém dados válidos.
-
-### FSM (Finite State Machine)
-Máquina de estados responsável pelo controle do funcionamento da cache.
+- `hit`
+- `miss`
+- `valid`
+- `dirty`
+- `mem_req`
+- `cpu_req`
+- `ready`
+- `rw`
 
 ---
 
-## 🧪 Testes
+## 🎓 Contexto Acadêmico
 
-O projeto inclui testes automatizados para:
+Projeto desenvolvido para fins acadêmicos na disciplina de Arquitetura de Computadores III.
 
-- Read hit
-- Read miss
-- Write hit
-- Write miss
-- Escrita de blocos dirty
-- Substituição de blocos
-- Conflitos de cache
-- Inicialização da cache
-- Consistência de dados
-
----
-
-## 🐞 Debug
-
-Verificar sinais importantes:
-
-- hit
-- miss
-- valid
-- dirty
-- mem_req
-- cpu_req
-- ready
-- rw
-
----
-
-## ⚠️ Observação
-
-Projeto acadêmico com finalidade didática.
+O objetivo principal é exercitar conceitos de hierarquia de memória e projeto de hardware utilizando SystemVerilog.
 
 ---
 
 ## 📌 Licença
 
-Uso acadêmico.
+Uso exclusivamente acadêmico.
