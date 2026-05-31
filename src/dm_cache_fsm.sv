@@ -4,202 +4,208 @@ import cache_def::*;
 module dm_cache_fsm(
     input  bit              clk,       // write clock
     input  bit              rst,
-    input  cpu_req_type     cpu_req,   // CPU request input (CPU -> cache)
-    input  mem_data_type    mem_data,  // memory response (memory -> cache)
-    output mem_req_type     mem_req,   // memory request (cache -> memory)
-    output cpu_result_type  cpu_res    // cache result (cache -> CPU)
+  input  bit [31:0]       cpu_addr,  // CPU request addr
+  input  bit [31:0]       cpu_wdata, // CPU write data
+  input  bit              cpu_rw,    // CPU request type: 0 = read, 1 = write
+  input  bit              cpu_valid, // CPU request valid
+  output bit [31:0]       cpu_rdata, // CPU read data
+  output bit              cpu_ready, // CPU result ready
+  input  cache_data_type  mem_rdata, // memory response data
+  input  bit              mem_ready, // memory response ready
+  output bit [31:0]       mem_addr,  // memory request addr
+  output cache_data_type  mem_wdata, // memory write data
+  output bit              mem_rw,    // memory request type: 0 = read, 1 = write
+  output bit              mem_valid  // memory request valid
 );
 
   timeunit 1ns;
   timeprecision 1ps;
 
-  /* write clock */
-  typedef enum {
-    idle,
-    compare_tag,
-    allocate,
-    write_back
-  } cache_state_type;
+  /* FSM state encoding */
+  localparam logic [1:0] IDLE = 2'b00;
+  localparam logic [1:0] COMPARE_TAG = 2'b01;
+  localparam logic [1:0] ALLOCATE = 2'b10;
+  localparam logic [1:0] WRITE_BACK = 2'b11;
 
   /* FSM state register */
-  cache_state_type vstate, rstate;
+  logic [1:0] vstate, rstate;
 
 
   /* interface signals to tag memory */
-  cache_tag_type tag_read;     // tag read result
-  cache_tag_type tag_write;    // tag write data
-  cache_req_type tag_req;      // tag request
+  logic [9:0]           tag_index;       // tag index
+  logic                 tag_we;          // tag write enable
+  logic                 tag_write_valid; // tag write valid
+  logic                 tag_write_dirty; // tag write dirty
+  logic [17:0]          tag_write_tag;   // tag write tag
+  logic                 tag_read_valid;  // tag read valid
+  logic                 tag_read_dirty;  // tag read dirty
+  logic [17:0]          tag_read_tag;    // tag read tag
 
   /* interface signals to cache data memory */
-  cache_data_type data_read;   // cache line read data
-  cache_data_type data_write;  // cache line write data
-  cache_req_type  data_req;    // data req
+  logic [9:0]           data_index;  // data index
+  logic                 data_we;     // data write enable
+  logic [127:0]         data_read;  // cache line read data
+  logic [127:0]         data_write; // cache line write data
 
-  /* temporary variable for cache controller result */
-  cpu_result_type v_cpu_res;
+  logic                 tag_read_valid_r;
+  logic                 tag_read_dirty_r;
+  logic [17:0]          tag_read_tag_r;
+  logic [127:0]         data_read_r;
 
-  /* temporary variable for memory controller request */
-  mem_req_type v_mem_req;
+  /* temporary variables for outputs */
+  logic [31:0]    v_cpu_rdata;
+  logic           v_cpu_ready;
+  logic [31:0]    v_mem_addr;
+  logic [127:0]   v_mem_wdata;
+  logic           v_mem_rw;
+  logic           v_mem_valid;
 
-  assign mem_req = v_mem_req;  // connect to output ports
-  assign cpu_res = v_cpu_res;
+  logic [127:0]   mem_rdata_i;
 
-  always_comb begin
-    /*-------------------------default values for all signals------------*/
+  assign mem_rdata_i = mem_rdata;
 
-    /* no state change by default */
+  assign cpu_rdata = v_cpu_rdata;
+  assign cpu_ready = v_cpu_ready;
+  assign mem_addr  = v_mem_addr;
+  assign mem_wdata = v_mem_wdata;
+  assign mem_rw    = v_mem_rw;
+  assign mem_valid = v_mem_valid;
+
+  always @(rstate, cpu_addr, cpu_wdata, cpu_rw, cpu_valid, tag_read_valid_r,
+           tag_read_dirty_r, tag_read_tag_r, data_read_r, mem_rdata_i,
+           mem_ready) begin
+    v_cpu_ready = 1'b0;
+    v_cpu_rdata = 32'b0;
+    v_mem_valid = 1'b0;
+    v_mem_rw = 1'b0;
+    v_mem_addr = 32'b0;
+    v_mem_wdata = 128'b0;
+    tag_we = 1'b0;
+    data_we = 1'b0;
+    tag_index = cpu_addr[13:4];
+    data_index = cpu_addr[13:4];
+    tag_write_valid = 1'b0;
+    tag_write_dirty = 1'b0;
+    tag_write_tag = 18'b0;
+    data_write = 128'b0;
+
     vstate = rstate;
-    v_cpu_res.data = '0;
-    v_cpu_res.ready = '0;
 
-    tag_write.valid = '0;
-    tag_write.dirty = '0;
-    tag_write.tag = '0;
-
-    /* read tag by default */
-    tag_req.we = '0;
-
-    /* direct map index for tag */
-    tag_req.index = cpu_req.addr[13:4];
-
-    /* read current cache line by default */
-    data_req.we = '0;
-
-    /* direct map index for cache data */
-    data_req.index = cpu_req.addr[13:4];
-
-    /* modify correct word (32-bit) based on address */
-    data_write = data_read;
-
-    case (cpu_req.addr[3:2])
-      2'b00: data_write[31:0]    = cpu_req.data;
-      2'b01: data_write[63:32]   = cpu_req.data;
-      2'b10: data_write[95:64]   = cpu_req.data;
-      2'b11: data_write[127:96]  = cpu_req.data;
-    endcase
-
-    /* read out correct word (32-bit) from cache (to CPU) */
-    case (cpu_req.addr[3:2])
-      2'b00: v_cpu_res.data = data_read[31:0];
-      2'b01: v_cpu_res.data = data_read[63:32];
-      2'b10: v_cpu_res.data = data_read[95:64];
-      2'b11: v_cpu_res.data = data_read[127:96];
-    endcase
-
-    /* memory request address (sampled from CPU request) */
-    v_mem_req.addr = cpu_req.addr;
-
-    /* memory request data (used in write) */
-    v_mem_req.data = data_read;
-    v_mem_req.rw = '0;
-    v_mem_req.valid = '0;
-
-    //------------------------------------Cache FSM-------------------------
     case (rstate)
-
-      /* idle state */
-      idle: begin
-        /* If there is a CPU request, then compare cache tag */
-        if (cpu_req.valid) begin
-          vstate = compare_tag;
+      IDLE: begin
+        if (cpu_valid) begin
+          vstate = COMPARE_TAG;
         end
       end
 
-      /* compare_tag state */
-      compare_tag: begin
-        /* cache hit (tag match and cache entry is valid) */
-        if (cpu_req.addr[TAGMSB:TAGLSB] == tag_read.tag && tag_read.valid) begin
-          v_cpu_res.ready = '1;
-
-          /* write hit */
-          if (cpu_req.rw) begin
-            /* read/modify cache line */
-            tag_req.we = '1;
-            data_req.we = '1;
-
-            /* no change in tag */
-            tag_write.tag = tag_read.tag;
-            tag_write.valid = '1;
-
-            /* cache line is dirty */
-            tag_write.dirty = '1;
+      COMPARE_TAG: begin
+        if (tag_read_valid_r && (cpu_addr[31:14] == tag_read_tag_r)) begin
+          v_cpu_ready = 1'b1;
+          if (cpu_rw) begin
+            data_write = data_read_r;
+            data_write[31:0] = cpu_wdata;
+            data_we = 1'b1;
+            tag_we = 1'b1;
+            tag_write_valid = 1'b1;
+            tag_write_dirty = 1'b1;
+            tag_write_tag = tag_read_tag_r;
           end
-
-          /* xaction is finished */
-          vstate = idle;
-        end
-
-        /* cache miss */
-        else begin
-          /* generate new tag */
-          tag_req.we = '1;
-          tag_write.valid = '1;
-
-          /* new tag */
-          tag_write.tag = cpu_req.addr[TAGMSB:TAGLSB];
-
-          /* cache line is dirty if write */
-          tag_write.dirty = cpu_req.rw;
-
-          /* generate memory request on miss */
-          v_mem_req.valid = '1;
-
-          /* compulsory miss or miss with clean block */
-          if (tag_read.valid == 1'b0 || tag_read.dirty == 1'b0) begin
-            /* wait till a new block is allocated */
-            vstate = allocate;
-          end
-
           else begin
-            /* miss with dirty line */
-
-            /* write back address */
-            v_mem_req.addr = {tag_read.tag, cpu_req.addr[TAGLSB-1:0]};
-            v_mem_req.rw = '1;
-
-            /* wait till write is completed */
-            vstate = write_back;
+            v_cpu_rdata = data_read_r[31:0];
           end
         end
-      end
+        else begin
+          tag_write_valid = 1'b1;
+          tag_write_dirty = cpu_rw;
+          tag_write_tag = cpu_addr[31:14];
+          tag_we = 1'b1;
+          v_mem_valid = 1'b1;
+          v_mem_rw = 1'b0;
+          v_mem_addr = cpu_addr;
 
-      /* wait for allocating a new cache line */
-      allocate: begin
-        /* memory controller has responded */
-        if (mem_data.ready) begin
-          /* re-compare tag for write miss (need modify correct word) */
-          vstate = compare_tag;
-          data_write = mem_data.data;
+          if ((tag_read_valid_r == 1'b0) || (tag_read_dirty_r == 1'b0)) begin
+            vstate = ALLOCATE;
+          end
+          else begin
+            v_mem_valid = 1'b1;
+            v_mem_rw = 1'b1;
+            v_mem_addr = {tag_read_tag_r, cpu_addr[13:0]};
+            v_mem_wdata = data_read_r;
+            vstate = WRITE_BACK;
+          end
+        end
 
-          /* update cache line data */
-          data_req.we = '1;
+        if (vstate == COMPARE_TAG) begin
+          vstate = IDLE;
         end
       end
 
-      /* wait for writing back dirty cache line */
-      write_back: begin
-        /* write back is completed */
-        if (mem_data.ready) begin
-          /* issue new memory request (allocating a new line) */
-          v_mem_req.valid = '1;
-          v_mem_req.rw = '0;
-          vstate = allocate;
+      ALLOCATE: begin
+        if (mem_ready) begin
+          data_write = mem_rdata_i;
+          data_we = 1'b1;
+          vstate = COMPARE_TAG;
         end
+      end
+
+      WRITE_BACK: begin
+        if (mem_ready) begin
+          v_mem_valid = 1'b1;
+          v_mem_rw = 1'b0;
+          v_mem_addr = cpu_addr;
+          vstate = ALLOCATE;
+        end
+      end
+
+      default: begin
+        vstate = IDLE;
       end
     endcase
   end
 
   always_ff @(posedge clk) begin
     if (rst) begin
-      rstate <= idle;  // reset to idle state
+      rstate <= IDLE;
     end
     else begin
       rstate <= vstate;
     end
   end
 
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      tag_read_valid_r <= 1'b0;
+      tag_read_dirty_r <= 1'b0;
+      tag_read_tag_r <= 18'b0;
+      data_read_r <= 128'b0;
+    end
+    else begin
+      tag_read_valid_r <= tag_read_valid;
+      tag_read_dirty_r <= tag_read_dirty;
+      tag_read_tag_r <= tag_read_tag;
+      data_read_r <= data_read;
+    end
+  end
+
   /* connect cache tag/data memory */
-  dm_cache_tag ctag(.*);
-  dm_cache_data cdata(.*);
+    dm_cache_tag ctag(
+      .clk(clk),
+      .tag_index(tag_index),
+      .tag_we(tag_we),
+      .tag_write_valid(tag_write_valid),
+      .tag_write_dirty(tag_write_dirty),
+      .tag_write_tag(tag_write_tag),
+      .tag_read_valid(tag_read_valid),
+      .tag_read_dirty(tag_read_dirty),
+      .tag_read_tag(tag_read_tag)
+    );
+
+    dm_cache_data cdata(
+      .clk(clk),
+      .data_index(data_index),
+      .data_we(data_we),
+      .data_write(data_write),
+      .data_read(data_read)
+    );
 
 endmodule

@@ -38,14 +38,34 @@ Os módulos principais seguem a organização apresentada pelo material teórico
 
 ---
 
+## ⚙️ Observações de Implementação
+
+Embora a arquitetura do controlador de cache siga a organização apresentada no livro, algumas adaptações de implementação foram realizadas para garantir compatibilidade com o simulador utilizado no projeto (Icarus Verilog).
+
+As principais adaptações foram:
+
+- Criação de modelos simplificados de CPU e memória principal para validação funcional da cache;
+- Implementação de um ambiente completo de simulação (`tb_dm_cache.sv`);
+- Ajustes na FSM do controlador para compatibilidade com o simulador;
+- Simplificação de algumas interfaces de comunicação entre módulos, substituindo estruturas compostas por sinais explícitos quando necessário.
+
+Essas modificações não alteram a arquitetura conceitual da cache nem os requisitos funcionais definidos no enunciado ou no material de referência.
+
+---
+
 ## 📦 Estrutura do Projeto
 
 ```text
 ac3-tp03-riscv-cache-controller/
 ├── bin/
 │
+├── debug/
+│   ├── tb_smoke_memories.sv
+│   └── tb_smoke.sv
+│
 ├── docs/
 │   ├── enunciado/
+│   ├── Trabalho Prático 1.pdf
 │   └── relatorio/
 │
 ├── src/
@@ -68,6 +88,15 @@ ac3-tp03-riscv-cache-controller/
 ├── Makefile
 └── README.md
 ```
+
+### Pasta de Debug
+
+A pasta `debug/` contém testbenches simplificados utilizados durante o processo de depuração e validação incremental do controlador de cache.
+
+Esses arquivos foram utilizados para isolar problemas de compatibilidade com o simulador Icarus Verilog e não fazem parte dos testes finais do projeto.
+
+- `tb_smoke.sv`
+- `tb_smoke_memories.sv`
 
 ---
 
