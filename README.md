@@ -106,7 +106,7 @@ Esses arquivos foram utilizados para isolar problemas de compatibilidade com o s
 
 ```bash
 sudo apt update
-sudo apt install iverilog gtkwave
+sudo apt install build-essential iverilog gtkwave
 ```
 
 Verificar instalação:
@@ -126,6 +126,18 @@ Para compilar e executar a simulação:
 make run
 ```
 
+Para compilar apenas:
+
+```bash
+make build
+```
+
+Para rodar os testes (alias de run):
+
+```bash
+make test
+```
+
 Para visualizar a waveform:
 
 ```bash
@@ -136,6 +148,12 @@ Para limpar os arquivos gerados:
 
 ```bash
 make clean
+```
+
+Para ver um resumo dos comandos:
+
+```bash
+make help
 ```
 
 Os arquivos gerados pela simulação ficam na pasta:
@@ -160,7 +178,7 @@ Depois:
 
 ```bash
 sudo apt update
-sudo apt install iverilog gtkwave
+sudo apt install build-essential iverilog gtkwave
 ```
 
 ---

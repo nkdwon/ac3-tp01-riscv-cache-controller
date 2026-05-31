@@ -1,4 +1,6 @@
 # Arquivos-fonte do núcleo da cache
+.PHONY: build run wave clean test help
+
 SRC = src/cache_def.sv \
       src/dm_cache_data.sv \
       src/dm_cache_tag.sv \
@@ -23,6 +25,16 @@ run: build
 
 wave:
 	gtkwave $(WAVE)
+
+test: run
+
+help:
+	@echo "alvos disponiveis:"
+	@echo "  build  - compila o testbench"
+	@echo "  run    - compila e executa a simulacao"
+	@echo "  wave   - abre a waveform em bin/wave.vcd"
+	@echo "  test   - alias de run"
+	@echo "  clean  - remove arquivos gerados"
 
 clean:
 	rm -rf $(BIN_DIR)
